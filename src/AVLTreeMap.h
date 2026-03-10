@@ -206,38 +206,46 @@ class AVLTreeMap {
         }
     }
 
+    void swap(AVLTreeMap& other) noexcept {
+        std::swap(root, other.root);
+        std::swap(sz, other.sz);
+    }
+
     Node* get_min(Node* v) {
         if (!v) return nullptr;
         while (v->left) v = v->left;
         return v;
     }
 
-    Node* insert(Node* root, const Pair& p) {
+    Node* insert(const Pair& p) {
         Node* c = root;
-        Node* parent = nullptr;
+        Node* otec = nullptr;
 
         while (c) {
-            parent = c;
+            otec = c;
             if (p.first == c->data.first) {
-                return root;
+                return c;
             } else if (p.first < c->data.first) {
                 c = c->left;
             } else {
                 c = c->right;
             }
         }
-        Node* a = new Node(p);
-        a->parent = parent;
-        if (!parent) {
-            root = a;
-        } else if (p.first < parent->data.first) {
-            parent->left = a;
+
+        Node* b = new Node(p);
+        b->parent = otec;
+
+        if (!otec) {
+            root = b;
+        } else if (p.first < otec->data.first) {
+            otec->left = b;
         } else {
-            parent->right = a;
+            otec->right = b;
         }
+
         ++sz;
-        if (parent) balance(parent);
-        return root;
+        if (otec) balance(otec);
+        return b;
     }
 
     void erase(Node* v) {
@@ -269,9 +277,60 @@ class AVLTreeMap {
         else if (child) balance(child);
     }
 
+    Node* copy_tree(Node* other, Node* p) {
+        if (!other) return nullptr;
+        Node* b = new Node(other->data);
+        b->height = other->height;
+        b->parent = p;
+        b->left = copy_tree(other->left, b);
+        b->right = copy_tree(other->right, b);
+        return b;
+    }
 
+    void clear(Node* v) {
+        if (!v) return;
+        clear(v->left);
+        clear(v->right);
+        delete v;
+    }
 
 public:
+    AVLTreeMap() : root(nullptr), sz(0) {}
+
+    AVLTreeMap(const AVLTreeMap& other) : root(nullptr), sz(other.sz) {
+        if (other.root) {
+            root = copy_tree(other.root, nullptr);
+        }
+    }
+
+    AVLTreeMap(AVLTreeMap&& other) noexcept
+        : root(other.root), sz(other.sz) {
+        other.root = nullptr;
+        other.sz = 0;
+    }
+
+    AVLTreeMap& operator=(const AVLTreeMap& other) {
+        if (this != &other) {
+            AVLTreeMap tmp(other);
+            swap(tmp);
+        }
+        return *this;
+    }
+
+    AVLTreeMap& operator=(AVLTreeMap&& other) noexcept {
+        if (this != &other) {
+            clear(root);
+            root = other.root;
+            sz = other.sz;
+            other.root = nullptr;
+            other.sz = 0;
+        }
+        return *this;
+    }
+
+    ~AVLTreeMap() {
+        clear(root);
+    }
 
     Iterator begin() {
         Node* cur = root;
@@ -290,7 +349,7 @@ public:
     TVal& operator[](const TKey& k) {
         Iterator it = find(k);
         if (it == end()) {
-            Node* v = insert(root, {k, TVal()});
+            Node* v = insert({k, TVal()});
             return v->data.second;
         }
         return it->second;
@@ -298,7 +357,7 @@ public:
 
     pair<Iterator, bool> insert(const Pair& p) {
         if (find(p.first) == end()) {
-            return {Iterator(insert(root, p)), true};
+            return {Iterator(insert(p)), true};
         }
         return {find(p.first), false};
     }
@@ -311,14 +370,14 @@ public:
         if (pos == end()) return end();
         Node* node = pos.node;
         Node* next = Iterator::increment(node);
-        eraseNode(node);
+        erase(node);
         return Iterator(next);
     }
 
     size_t erase(const TKey& k) {
         Node* node = find(root, k);
         if (!node) return 0;
-        eraseNode(node);
+        erase(node);
         return 1;
     }
 
