@@ -10,4 +10,6 @@ include_directories(samples)
 add_executable(PolinomiMapi
         samples/main.cpp
         src/UnorderedMapVec.h
+        src/ChainHashTableMap.h
+        src/OpenAddressingHashTableMap.h
 )
