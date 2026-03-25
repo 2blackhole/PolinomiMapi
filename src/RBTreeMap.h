@@ -1,6 +1,5 @@
 #pragma once
 #include <utility>
-#include <stdexcept>
 #include <cstddef>
 
 enum Color { RED, BLACK };
@@ -18,6 +17,7 @@ private:
         Node* right;
         Node* parent;
 
+        Node() : color(BLACK), left(nullptr), right(nullptr), parent(nullptr) {}
         Node(const TKey& key, const TVal& val, Color c = RED,
              Node* l = nullptr, Node* r = nullptr, Node* p = nullptr)
             : data(key, val), color(c), left(l), right(r), parent(p) {}
@@ -30,53 +30,50 @@ private:
     size_t sz;
 
     static void initNil() {
-        if (_nil.color != BLACK) {
-            _nil.color = BLACK;
-            _nil.left = _nil.right = _nil.parent = &_nil;
-        }
+        _nil.color = BLACK;
+        _nil.left = _nil.right = _nil.parent = NIL;
     }
-    static Node* minimum(Node* x) {
+
+    Node* minimum(Node* x) const {
         if (x == NIL) return NIL;
         while (x->left != NIL) x = x->left;
         return x;
     }
 
-    static Node* maximum(Node* x) {
+    Node* maximum(Node* x) const {
         if (x == NIL) return NIL;
         while (x->right != NIL) x = x->right;
         return x;
     }
 
-    static Node* increment(Node* x) {
+    Node* increment(Node* x) const {
         if (x == NIL) return NIL;
         if (x->right != NIL) {
             x = x->right;
             while (x->left != NIL) x = x->left;
-        } else {
-            Node* y = x->parent;
-            while (y != NIL && x == y->right) {
-                x = y;
-                y = y->parent;
-            }
-            x = y;
+            return x;
         }
-        return x;
+        Node* y = x->parent;
+        while (y != NIL && x == y->right) {
+            x = y;
+            y = y->parent;
+        }
+        return y;
     }
 
-    static Node* decrement(Node* x) {
+    Node* decrement(Node* x) const {
         if (x == NIL) return maximum(root);
         if (x->left != NIL) {
             x = x->left;
             while (x->right != NIL) x = x->right;
-        } else {
-            Node* y = x->parent;
-            while (y != NIL && x == y->left) {
-                x = y;
-                y = y->parent;
-            }
-            x = y;
+            return x;
         }
-        return x;
+        Node* y = x->parent;
+        while (y != NIL && x == y->left) {
+            x = y;
+            y = y->parent;
+        }
+        return y;
     }
 
     Node* findNode(const TKey& key) const {
@@ -168,54 +165,56 @@ private:
     void fixDeleting(Node* x, Node* parent, bool isLeft) {
         while (x != root && (x == NIL || x->color == BLACK)) {
             if (isLeft) {
-                Node* brother = parent->right;
-                if (brother->color == RED) {
-                    brother->color = BLACK;
+                Node* w = parent->right;
+                if (w->color == RED) {
+                    w->color = BLACK;
                     parent->color = RED;
                     leftRotate(parent);
-                    brother = parent->right;
+                    w = parent->right;
                 }
-                if (brother->left->color == BLACK && brother->right->color == BLACK) {
-                    brother->color = RED;
+                if ((w->left == NIL || w->left->color == BLACK) &&
+                    (w->right == NIL || w->right->color == BLACK)) {
+                    if (w != NIL) w->color = RED;
                     x = parent;
                     parent = x->parent;
                     if (parent != NIL) isLeft = (x == parent->left);
                 } else {
-                    if (brother->right->color == BLACK) {
-                        brother->left->color = BLACK;
-                        brother->color = RED;
-                        rightRotate(brother);
-                        brother = parent->right;
+                    if (w->right == NIL || w->right->color == BLACK) {
+                        if (w->left != NIL) w->left->color = BLACK;
+                        if (w != NIL) w->color = RED;
+                        rightRotate(w);
+                        w = parent->right;
                     }
-                    brother->color = parent->color;
+                    if (w != NIL) w->color = parent->color;
                     parent->color = BLACK;
-                    brother->right->color = BLACK;
+                    if (w->right != NIL) w->right->color = BLACK;
                     leftRotate(parent);
                     x = root;
                 }
             } else {
-                Node* brother = parent->left;
-                if (brother->color == RED) {
-                    brother->color = BLACK;
+                Node* w = parent->left;
+                if (w->color == RED) {
+                    w->color = BLACK;
                     parent->color = RED;
                     rightRotate(parent);
-                    brother = parent->left;
+                    w = parent->left;
                 }
-                if (brother->right->color == BLACK && brother->left->color == BLACK) {
-                    brother->color = RED;
+                if ((w->right == NIL || w->right->color == BLACK) &&
+                    (w->left == NIL || w->left->color == BLACK)) {
+                    if (w != NIL) w->color = RED;
                     x = parent;
                     parent = x->parent;
                     if (parent != NIL) isLeft = (x == parent->left);
                 } else {
-                    if (brother->left->color == BLACK) {
-                        brother->right->color = BLACK;
-                        brother->color = RED;
-                        leftRotate(brother);
-                        brother = parent->left;
+                    if (w->left == NIL || w->left->color == BLACK) {
+                        if (w->right != NIL) w->right->color = BLACK;
+                        if (w != NIL) w->color = RED;
+                        leftRotate(w);
+                        w = parent->left;
                     }
-                    brother->color = parent->color;
+                    if (w != NIL) w->color = parent->color;
                     parent->color = BLACK;
-                    brother->left->color = BLACK;
+                    if (w->left != NIL) w->left->color = BLACK;
                     rightRotate(parent);
                     x = root;
                 }
@@ -232,7 +231,7 @@ private:
             u->parent->left = v;
         else
             u->parent->right = v;
-        v->parent = u->parent;
+        if (v != NIL) v->parent = u->parent;
     }
 
     Node* copyTree(Node* node) const {
@@ -260,19 +259,19 @@ public:
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type&;
-        using node_type = Node;
 
     private:
-        node_type* node;
+        Node* node;
+        const RBTreeMap* tree;
 
     public:
-        explicit Iterator(node_type* n = nullptr) : node(n) {}
+        explicit Iterator(Node* n = NIL, const RBTreeMap* t = nullptr) : node(n), tree(t) {}
 
         reference operator*() const { return node->data; }
         pointer operator->() const { return &(operator*()); }
 
         Iterator& operator++() {
-            node = increment(node);
+            node = tree->increment(node);
             return *this;
         }
         Iterator operator++(int) {
@@ -280,11 +279,12 @@ public:
             ++(*this);
             return tmp;
         }
+
         Iterator& operator--() {
-            if (node == nullptr)
-                node = maximum(root);
+            if (node == NIL)
+                node = tree->maximum(tree->root);
             else
-                node = decrement(node);
+                node = tree->decrement(node);
             return *this;
         }
         Iterator operator--(int) {
@@ -292,25 +292,21 @@ public:
             --(*this);
             return tmp;
         }
+
         bool operator==(const Iterator& other) const { return node == other.node; }
         bool operator!=(const Iterator& other) const { return node != other.node; }
 
         friend class RBTreeMap;
     };
 
-    RBTreeMap() : root(NIL), sz(0) {
-        initNil();
-    }
-
+    RBTreeMap() : root(NIL), sz(0) { initNil(); }
     ~RBTreeMap() { clear(root); }
 
     RBTreeMap(const RBTreeMap& other) : root(NIL), sz(other.sz) {
-        initNil();
         if (other.root != NIL) root = copyTree(other.root);
     }
 
-    RBTreeMap(RBTreeMap&& other) noexcept
-        : root(other.root), sz(other.sz) {
+    RBTreeMap(RBTreeMap&& other) noexcept : root(other.root), sz(other.sz) {
         other.root = NIL;
         other.sz = 0;
     }
@@ -351,14 +347,13 @@ public:
 
     Iterator find(const TKey& key) {
         Node* n = findNode(key);
-        return Iterator(n == NIL ? nullptr : n);
+        return Iterator(n == NIL ? NIL : n, this);
     }
 
     std::pair<Iterator, bool> insert(const Pair& p) {
         const TKey& key = p.first;
         Node* cur = root;
         Node* parent = NIL;
-        bool dup = false;
 
         while (cur != NIL) {
             parent = cur;
@@ -366,30 +361,22 @@ public:
                 cur = cur->left;
             else if (cur->data.first < key)
                 cur = cur->right;
-            else {
-                dup = true;
-                break;
-            }
-        }
-
-        if (dup) {
-            cur->data.second = p.second;
-            return {Iterator(cur), false};
+            else
+                return {Iterator(cur, this), false};
         }
 
         Node* newNode = new Node(key, p.second, RED, NIL, NIL, NIL);
         newNode->parent = parent;
-        if (parent == NIL) {
+        if (parent == NIL)
             root = newNode;
-        } else if (key < parent->data.first) {
+        else if (key < parent->data.first)
             parent->left = newNode;
-        } else {
+        else
             parent->right = newNode;
-        }
 
         fixInsertion(newNode);
         ++sz;
-        return {Iterator(newNode), true};
+        return {Iterator(newNode, this), true};
     }
 
     Iterator erase(Iterator pos) {
@@ -452,11 +439,11 @@ public:
 
     Iterator begin() {
         Node* minNode = minimum(root);
-        return Iterator(minNode == NIL ? nullptr : minNode);
+        return Iterator(minNode, this);
     }
 
     Iterator end() {
-        return Iterator(nullptr);
+        return Iterator(NIL, this);
     }
 };
 

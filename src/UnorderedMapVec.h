@@ -15,7 +15,7 @@ class UnorderedMapVec {
 
     class Iterator {
     public:
-        typename VecIterator<VectorBananov<Pair>> iter;
+        VecIterator<VectorBananov<Pair>> iter;
         explicit Iterator(VecIterator<VectorBananov<Pair>> i) : iter(i) {}
 
         using iterator_category = std::forward_iterator_tag;

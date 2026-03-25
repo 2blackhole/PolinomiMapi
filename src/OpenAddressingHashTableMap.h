@@ -1,12 +1,5 @@
-//
-// Created by Egorb on 2026-03-19.
-//
-
 #ifndef OPENADDRESSINGHASHTABLEMAP_H
 #define OPENADDRESSINGHASHTABLEMAP_H
-
-#ifndef OPEN_ADDRESSING_HASH_TABLE_MAP_H
-#define OPEN_ADDRESSING_HASH_TABLE_MAP_H
 
 #include <bits/stdc++.h>
 #include "VectorBananov.h"
@@ -18,58 +11,60 @@ template <class TKey, class TVal>
 class OpenAddressingHashTableMap {
     using Pair = pair<TKey, TVal>;
 
-    enum CellState { EMPTY, OCCUPIED, DELETED };
+    enum CellState { FREE, IN_USE, ERASED };
 
     struct HashCell {
         Pair data;
         CellState state;
 
-        HashCell() : state(EMPTY) {}
-        HashCell(const Pair& p, CellState s = OCCUPIED) : data(p), state(s) {}
+        HashCell() : state(FREE) {}
+        HashCell(const Pair& p, CellState s = IN_USE) : data(p), state(s) {}
     };
 
     VectorBananov<HashCell> table;
     size_t num_elements;
-    size_t num_deleted;
+    size_t table_mask;          // size - 1 (для быстрого &)
     const double LOAD_FACTOR_THRESHOLD = 0.75;
 
-    size_t hash1(const TKey& k) const {
-        return std::hash<TKey>{}(k);
+    size_t get_index(const TKey& key) const {
+        // Быстрый хеш с умножением, как в примере
+        return (std::hash<TKey>{}(key) * 22543) & table_mask;
     }
 
-    size_t hash2(const TKey& k) const {
-        size_t h = std::hash<TKey>{}(k);
-        return (h % (table.size() - 1)) + 1;
-    }
+    void rehash() {
+        size_t new_cap = (table_mask + 1) * 2;
+        VectorBananov<HashCell> new_table(new_cap, HashCell());
+        size_t new_mask = new_cap - 1;
 
-    size_t probe(const TKey& k, size_t i) const {
-        return (hash1(k) + i * hash2(k)) % table.size();
-    }
-
-    void rehash(size_t new_size) {
-        VectorBananov<HashCell> old_table = std::move(table);
-        table = VectorBananov<HashCell>(new_size);
-        for (size_t j = 0; j < table.size(); ++j) {
-            table[j].state = EMPTY;
-        }
-        num_elements = 0;
-        num_deleted = 0;
-
-        for (size_t i = 0; i < old_table.size(); ++i) {
-            if (old_table[i].state == OCCUPIED) {
-                insert(old_table[i].data);
+        for (size_t i = 0; i < table.size(); ++i) {
+            if (table[i].state == IN_USE) {
+                size_t idx = (std::hash<TKey>{}(table[i].data.first) * 22543) & new_mask;
+                while (new_table[idx].state == IN_USE) {
+                    ++idx;
+                    if (idx == new_cap) idx = 0;
+                }
+                new_table[idx].data = table[i].data;
+                new_table[idx].state = IN_USE;
             }
         }
+
+        table = std::move(new_table);
+        table_mask = new_mask;
+        num_elements = 0; // будет пересчитано? Нет, мы перенесли элементы, но num_elements остаётся.
+        // Лучше пересчитать:
+        num_elements = 0;
+        for (size_t i = 0; i < table.size(); ++i)
+            if (table[i].state == IN_USE) ++num_elements;
     }
 
     class Iterator {
     public:
-        using VecIter = typename VectorBananov<HashCell>::iterator;
+        using VecIter = typename VectorBananov<HashCell>::Iterator;
         VecIter it;
         VecIter end_it;
 
         Iterator(VecIter i, VecIter e) : it(i), end_it(e) {
-            if (it != end_it && it->state != OCCUPIED) {
+            if (it != end_it && it->state != IN_USE) {
                 ++(*this);
             }
         }
@@ -85,7 +80,7 @@ class OpenAddressingHashTableMap {
 
         Iterator& operator++() {
             ++it;
-            while (it != end_it && it->state != OCCUPIED) {
+            while (it != end_it && it->state != IN_USE) {
                 ++it;
             }
             return *this;
@@ -97,10 +92,11 @@ class OpenAddressingHashTableMap {
 
 public:
     OpenAddressingHashTableMap(size_t initial_size = 16)
-        : table(initial_size), num_elements(0), num_deleted(0) {
-        for (size_t i = 0; i < table.size(); ++i) {
-            table[i].state = EMPTY;
-        }
+        : num_elements(0) {
+        size_t cap = 1;
+        while (cap < initial_size) cap <<= 1;
+        table_mask = cap - 1;
+        table = VectorBananov<HashCell>(cap, HashCell());
     }
 
     OpenAddressingHashTableMap(const VectorBananov<pair<TKey, TVal>>& v)
@@ -118,45 +114,57 @@ public:
     }
 
     Iterator find(const TKey& k) {
-        for (size_t i = 0; i < table.size(); ++i) {
-            size_t idx = probe(k, i);
+        size_t idx = get_index(k);
+        for (size_t i = 0; i <= table_mask; ++i) {
             HashCell& cell = table[idx];
-
-            if (cell.state == EMPTY) {
-                return end();
-            }
-            if (cell.state == OCCUPIED && cell.data.first == k) {
+            if (cell.state == FREE) return end();
+            if (cell.state == IN_USE && cell.data.first == k)
                 return Iterator(table.begin() + idx, table.end());
-            }
+            ++idx;
+            if (idx > table_mask) idx = 0;
         }
         return end();
     }
 
-    bool empty() const {
-        return num_elements == 0;
-    }
-
-    size_t size() const {
-        return num_elements;
-    }
+    bool empty() const { return num_elements == 0; }
+    size_t size() const { return num_elements; }
 
     TVal& operator[](const TKey& k) {
         Iterator it = find(k);
-        if (it != end()) {
-            return it->second;
+        if (it != end()) return it->second;
+
+        if (static_cast<double>(num_elements + 1) > LOAD_FACTOR_THRESHOLD * (table_mask + 1)) {
+            rehash();
         }
-        auto res = insert({k, TVal()});
-        return res.first->second;
+
+        size_t idx = get_index(k);
+        size_t first_free = table_mask + 1;
+        for (size_t i = 0; i <= table_mask; ++i) {
+            HashCell& cell = table[idx];
+            if (cell.state == FREE || cell.state == ERASED) {
+                if (first_free > table_mask) first_free = idx;
+            }
+            if (cell.state == IN_USE && cell.data.first == k) {
+                // Не должно произойти, так как мы уже проверили find
+                return cell.data.second;
+            }
+            ++idx;
+            if (idx > table_mask) idx = 0;
+        }
+
+        // Вставляем в первую свободную
+        HashCell& cell = table[first_free];
+        cell.data = Pair(k, TVal());
+        cell.state = IN_USE;
+        ++num_elements;
+        return cell.data.second;
     }
 
     Iterator erase(Iterator pos) {
         if (pos == end()) return end();
-
         size_t idx = pos.it - table.begin();
-        table[idx].state = DELETED;
+        table[idx].state = ERASED;
         --num_elements;
-        ++num_deleted;
-
         Iterator next = pos;
         ++next;
         return next;
@@ -172,53 +180,62 @@ public:
     }
 
     pair<Iterator, bool> insert(const Pair& p) {
-        if (static_cast<double>(num_elements + num_deleted) > LOAD_FACTOR_THRESHOLD * table.size()) {
-            rehash(table.size() * 2);
+        Iterator it = find(p.first);
+        if (it != end()) return {it, false};
+
+        if (static_cast<double>(num_elements + 1) > LOAD_FACTOR_THRESHOLD * (table_mask + 1)) {
+            rehash();
         }
 
-        for (size_t i = 0; i < table.size(); ++i) {
-            size_t idx = probe(p.first, i);
+        size_t idx = get_index(p.first);
+        size_t first_free = table_mask + 1;
+        for (size_t i = 0; i <= table_mask; ++i) {
             HashCell& cell = table[idx];
-
-            if (cell.state == OCCUPIED && cell.data.first == p.first) {
+            if (cell.state == FREE || cell.state == ERASED) {
+                if (first_free > table_mask) first_free = idx;
+            }
+            if (cell.state == IN_USE && cell.data.first == p.first) {
+                // Не должно произойти
                 return {Iterator(table.begin() + idx, table.end()), false};
             }
-
-            if (cell.state != OCCUPIED) {
-                cell.data = p;
-                cell.state = OCCUPIED;
-                ++num_elements;
-                return {Iterator(table.begin() + idx, table.end()), true};
-            }
+            ++idx;
+            if (idx > table_mask) idx = 0;
         }
 
-        rehash(table.size() * 2);
-        return insert(p);
+        HashCell& cell = table[first_free];
+        cell.data = p;
+        cell.state = IN_USE;
+        ++num_elements;
+        return {Iterator(table.begin() + first_free, table.end()), true};
     }
 
     pair<Iterator, bool> insert(Pair&& p) {
-        if (static_cast<double>(num_elements + num_deleted) > LOAD_FACTOR_THRESHOLD * table.size()) {
-            rehash(table.size() * 2);
+        Iterator it = find(p.first);
+        if (it != end()) return {it, false};
+
+        if (static_cast<double>(num_elements + 1) > LOAD_FACTOR_THRESHOLD * (table_mask + 1)) {
+            rehash();
         }
 
-        for (size_t i = 0; i < table.size(); ++i) {
-            size_t idx = probe(p.first, i);
+        size_t idx = get_index(p.first);
+        size_t first_free = table_mask + 1;
+        for (size_t i = 0; i <= table_mask; ++i) {
             HashCell& cell = table[idx];
-
-            if (cell.state == OCCUPIED && cell.data.first == p.first) {
+            if (cell.state == FREE || cell.state == ERASED) {
+                if (first_free > table_mask) first_free = idx;
+            }
+            if (cell.state == IN_USE && cell.data.first == p.first) {
                 return {Iterator(table.begin() + idx, table.end()), false};
             }
-
-            if (cell.state != OCCUPIED) {
-                cell.data = std::move(p);
-                cell.state = OCCUPIED;
-                ++num_elements;
-                return {Iterator(table.begin() + idx, table.end()), true};
-            }
+            ++idx;
+            if (idx > table_mask) idx = 0;
         }
 
-        rehash(table.size() * 2);
-        return insert(p);
+        HashCell& cell = table[first_free];
+        cell.data = std::move(p);
+        cell.state = IN_USE;
+        ++num_elements;
+        return {Iterator(table.begin() + first_free, table.end()), true};
     }
 
     Iterator begin() {

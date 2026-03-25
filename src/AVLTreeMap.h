@@ -217,7 +217,7 @@ class AVLTreeMap {
         return v;
     }
 
-    Node* insert(const Pair& p) {
+    Node* _insert(const Pair& p) {
         Node* c = root;
         Node* otec = nullptr;
 
@@ -349,7 +349,7 @@ public:
     TVal& operator[](const TKey& k) {
         Iterator it = find(k);
         if (it == end()) {
-            Node* v = insert({k, TVal()});
+            Node* v = _insert({k, TVal()});
             return v->data.second;
         }
         return it->second;
@@ -357,7 +357,7 @@ public:
 
     pair<Iterator, bool> insert(const Pair& p) {
         if (find(p.first) == end()) {
-            return {Iterator(insert(p)), true};
+            return {Iterator(_insert(p)), true};
         }
         return {find(p.first), false};
     }

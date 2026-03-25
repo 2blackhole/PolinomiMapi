@@ -17,17 +17,17 @@ class OrderedMapVec {
 
     class Iterator {
     public:
-        typename VecIterator<VectorBananov<Pair>> iter;
+        VecIterator<VectorBananov<Pair>> iter;
         explicit Iterator(VecIterator<VectorBananov<Pair>> i) : iter(i) {}
 
         using iterator_category = std::forward_iterator_tag;
         using value_type = Pair;
         using difference_type = std::ptrdiff_t;
-        using pointer = Pair*;
+        using posize_ter = Pair*;
         using reference = Pair&;
 
         reference operator*() const { return *iter; }
-        pointer operator->() const { return &(*iter); }
+        posize_ter operator->() const { return &(*iter); }
 
         Iterator& operator++() { ++iter; return *this; }
         Iterator& operator+=(difference_type n) {
@@ -45,10 +45,10 @@ public:
 
 
     Iterator find(const TKey& k) {
-        int l = 0;
-        int r = data.size();
+        size_t l = 0;
+        size_t r = data.size();
         while (l < r) {
-            int mid = l + (r - l) / 2;
+            size_t mid = l + (r - l) / 2;
             if (data[mid].first == k) {
                 return Iterator{data.begin() + mid};
             }
@@ -72,11 +72,8 @@ public:
     }
 
     TVal& operator[](const TKey& k) {
-        Iterator it = find(k);
-        if (it != end()) {
-            return it->second;
-        }
-        return insert({k, TVal()}).second;
+        auto [it, inserted] = insert({k, TVal()});
+        return it->second;
     }
 
     Iterator erase(Iterator pos) {
@@ -95,10 +92,10 @@ public:
 
     pair<Iterator, bool> insert(const Pair& p) {
         if (find(p.first) == end()) {
-            int l = 0;
-            int r = data.size();
+            size_t l = 0;
+            size_t r = data.size();
             while (l < r) {
-                int mid = l + (r - l ) / 2;
+                size_t mid = l + (r - l ) / 2;
                 if (data[mid].first < p.first) {
                     l = mid + 1;
                 }

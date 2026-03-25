@@ -137,6 +137,16 @@ public:
         return m_data[index];
     }
 
+    reference_type back() {
+        if (m_size == 0) throw std::out_of_range("Vector is empty");
+        return m_data[m_size - 1];
+    }
+
+    const_reference_type back() const {
+        if (m_size == 0) throw std::out_of_range("Vector is empty");
+        return m_data[m_size - 1];
+    }
+    
     const pointer_type data() const { return m_data; }
     pointer_type data() { return m_data; }
 

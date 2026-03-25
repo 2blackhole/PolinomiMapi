@@ -26,7 +26,7 @@ class ChainHashTableMap {
 
     void rehash(size_t new_bucket_count) {
         Buckets old_buckets = std::move(buckets);
-        buckets = Buckets(new_bucket_count);
+        buckets = Buckets(new_bucket_count, Bucket());
         for (size_t i = 0; i < buckets.size(); ++i) {
             buckets[i] = Bucket();
         }
@@ -49,8 +49,11 @@ public:
         II inner;
 
         Iterator(OI o, OI oe) : outer(o), outer_end(oe) {
-            if (outer != outer_end && outer->empty()) {
-                ++(*this);
+            if (outer != outer_end) {
+                inner = outer->begin();
+                if (outer->empty()) {
+                    ++(*this);
+                }
             }
         }
 
@@ -87,7 +90,7 @@ public:
     };
 
     ChainHashTableMap(size_t initial_buckets = 16) : sz(0) {
-        buckets = Buckets(initial_buckets);
+        buckets = Buckets(initial_buckets, Bucket());
         for (size_t i = 0; i < buckets.size(); ++i) {
             buckets[i] = Bucket();
         }
