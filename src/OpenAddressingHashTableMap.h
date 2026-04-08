@@ -1,7 +1,9 @@
 #ifndef OPENADDRESSINGHASHTABLEMAP_H
 #define OPENADDRESSINGHASHTABLEMAP_H
 
-#include <bits/stdc++.h>
+ #include <cstddef>       
+#include <utility>       
+#include <iterator>  
 #include "VectorBananov.h"
 #include "VecIterator.h"
 
@@ -23,11 +25,10 @@ class OpenAddressingHashTableMap {
 
     VectorBananov<HashCell> table;
     size_t num_elements;
-    size_t table_mask;          // size - 1 (для быстрого &)
+    size_t table_mask;
     const double LOAD_FACTOR_THRESHOLD = 0.75;
 
     size_t get_index(const TKey& key) const {
-        // Быстрый хеш с умножением, как в примере
         return (std::hash<TKey>{}(key) * 22543) & table_mask;
     }
 
@@ -50,8 +51,7 @@ class OpenAddressingHashTableMap {
 
         table = std::move(new_table);
         table_mask = new_mask;
-        num_elements = 0; // будет пересчитано? Нет, мы перенесли элементы, но num_elements остаётся.
-        // Лучше пересчитать:
+        num_elements = 0; 
         num_elements = 0;
         for (size_t i = 0; i < table.size(); ++i)
             if (table[i].state == IN_USE) ++num_elements;
@@ -145,15 +145,13 @@ public:
                 if (first_free > table_mask) first_free = idx;
             }
             if (cell.state == IN_USE && cell.data.first == k) {
-                // Не должно произойти, так как мы уже проверили find
-                return cell.data.second;
+                                 return cell.data.second;
             }
             ++idx;
             if (idx > table_mask) idx = 0;
         }
 
-        // Вставляем в первую свободную
-        HashCell& cell = table[first_free];
+                 HashCell& cell = table[first_free];
         cell.data = Pair(k, TVal());
         cell.state = IN_USE;
         ++num_elements;
@@ -195,8 +193,7 @@ public:
                 if (first_free > table_mask) first_free = idx;
             }
             if (cell.state == IN_USE && cell.data.first == p.first) {
-                // Не должно произойти
-                return {Iterator(table.begin() + idx, table.end()), false};
+                                 return {Iterator(table.begin() + idx, table.end()), false};
             }
             ++idx;
             if (idx > table_mask) idx = 0;
@@ -247,4 +244,4 @@ public:
     }
 };
 
-#endif //OPENADDRESSINGHASHTABLEMAP_H
+#endif  

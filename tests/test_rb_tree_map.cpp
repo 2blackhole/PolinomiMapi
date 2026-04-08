@@ -192,59 +192,82 @@ TEST(RBTreeMapEraseTest, EraseAndReinsert) {
     ASSERT_NE(it, m.end());
     EXPECT_EQ(it->second, 20);
 }
-TEST(RBTreeMapStressTest, ManyInsertErase) {
+TEST(RBTreeMapStressTest, ManyInsertEraseBalanced) {
     using Map = RBTreeMap<int, int>;
     Map map;
+    std::map<int, int> ref;
 
-    const int N = 5000;
-    const int OPS = 5000000;
+    const int N = 100000;       
+    const int TARGET_SIZE = 20000;  
+    const int OPS = 1000000;
 
     std::mt19937 rng(12345);
     std::uniform_int_distribution<int> keyDist(1, N);
     std::uniform_int_distribution<int> valDist(1, 1000);
-    std::uniform_int_distribution<int> opDist(0, 1);
+    
 
-    std::map<int, int> ref;
+    auto start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < OPS; ++i) {
-        if (opDist(rng) == 0) {
-            int key = keyDist(rng);
-            int val = valDist(rng);
-            map.insert({key, val});
-            ref.insert({key, val});
-        } else {
-            int key = keyDist(rng);
-            map.erase(key);
-            ref.erase(key);
+        bool doInsert;
+
+        if (map.size() < TARGET_SIZE) {
+            doInsert = true;
+        }
+        else if (map.size() > TARGET_SIZE * 2) {
+            doInsert = false;
+        }
+        else {
+            doInsert = rng() % 2;
         }
 
-        if (i % (OPS / 10) == 0 && i > 0) {
-            EXPECT_EQ(map.size(), ref.size()) << "At step " << i;
+        if (doInsert) {
+            int key = keyDist(rng);
+            int val = valDist(rng);
+
+            auto r1 = map.insert({ key, val });
+            auto r2 = ref.insert({ key, val });
+
+            EXPECT_EQ(r1.second, r2.second);
+        }
+        else {
+            int key = keyDist(rng);
+
+            size_t e1 = map.erase(key);
+            size_t e2 = ref.erase(key);
+
+            EXPECT_EQ(e1, e2);
+        }
+
+        if (i % 50000 == 0) {
+            EXPECT_EQ(map.size(), ref.size()) << "Step " << i;
+
+            for (const auto& p : ref) {
+                auto it = map.find(p.first);
+                ASSERT_NE(it, map.end());
+                EXPECT_EQ(it->second, p.second);
+            }
         }
     }
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "[Stress] RBTree ManyFinds (" << TARGET_SIZE << " operation) done in "
+        << elapsed.count() << " sec\n";
 
     EXPECT_EQ(map.size(), ref.size());
 
-    for (const auto& p : ref) {
-        auto it = map.find(p.first);
-        EXPECT_NE(it, map.end()) << "Key " << p.first << " not found in map";
-        EXPECT_EQ(it->second, p.second);
-    }
-
-    for (auto it = map.begin(); it != map.end(); ++it) {
-        auto rit = ref.find(it->first);
-        EXPECT_NE(rit, ref.end()) << "Extra key " << it->first << " in map";
-        EXPECT_EQ(it->second, rit->second);
-    }
-
     auto it = map.begin();
-    auto prev = it++;
-    while (it != map.end()) {
-        EXPECT_LT(prev->first, it->first);
-        ++prev; ++it;
-    }
-}
+    auto rit = ref.begin();
 
+    while (it != map.end() && rit != ref.end()) {
+        EXPECT_EQ(it->first, rit->first);
+        EXPECT_EQ(it->second, rit->second);
+        ++it; ++rit;
+    }
+
+    EXPECT_EQ(it, map.end());
+    EXPECT_EQ(rit, ref.end());
+}
 TEST(RBTreeMapStressTest, ManyFinds) {
     using Map = RBTreeMap<int, int>;
     Map map;

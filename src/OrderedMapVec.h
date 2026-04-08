@@ -5,7 +5,10 @@
 #ifndef ORDEREDMAPVEC_H
 #define ORDEREDMAPVEC_H
 
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h>
+#include <cstddef>      
+#include <utility>     
+#include <iterator> 
 #include "VectorBananov.h"
 #include "VecIterator.h"
 using std::pair;

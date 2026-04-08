@@ -1,11 +1,14 @@
 //
-// Created by Egorb on 2026-03-18.
+// Created by Amour on 2026-03-18.
 //
 
 #ifndef CHAIN_HASH_TABLE_MAP_H
 #define CHAIN_HASH_TABLE_MAP_H
 
-#include <bits/stdc++.h>
+#include <cstddef>       
+#include <functional>   
+#include <utility>      
+#include <iterator>  
 #include "VectorBananov.h"
 #include "VecIterator.h"
 

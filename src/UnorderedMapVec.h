@@ -1,9 +1,12 @@
 //
-// Created by banani on 26/02/26.
+// Created by Amour on 26/02/26.
 //
 #ifndef UNORDERED_MAP_VEC_H
 #define UNORDERED_MAP_VEC_H
-#include <bits/stdc++.h>
+
+#include <cstddef>       
+#include <utility>     
+#include <iterator>
 #include "VectorBananov.h"
 #include "VecIterator.h"
 using std::pair;

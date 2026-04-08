@@ -4,7 +4,10 @@
 
 #ifndef AVLTREEMAP_H
 #define AVLTREEMAP_H
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h>
+#include <cstddef>      
+#include <utility>     
+#include <iterator>  
 using std::pair;
 
 template<class TKey, class TVal>
@@ -366,13 +369,30 @@ public:
 
     size_t size() {return sz;}
 
+    Node* findNextNode(TKey& key) {
+        Node* cur = root;
+        Node* succ = nullptr;
+
+        while (cur) {
+            if (key < cur->data.first) {
+                succ = cur;
+                cur = cur->left;
+            }
+            else {
+                cur = cur->right;
+            }
+        }
+        return succ;
+    }
     Iterator erase(Iterator pos) {
         if (pos == end()) return end();
-        Node* node = pos.node;
-        Node* next = Iterator::increment(node);
-        erase(node);
-        return Iterator(next);
+
+        TKey key = pos->first;
+        erase(pos.node);
+
+        return Iterator(findNextNode(key));
     }
+    
 
     size_t erase(const TKey& k) {
         Node* node = find(root, k);
