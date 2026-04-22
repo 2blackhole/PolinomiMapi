@@ -1,16 +1,17 @@
 #ifndef OPENADDRESSINGHASHTABLEMAP_H
 #define OPENADDRESSINGHASHTABLEMAP_H
 
- #include <cstddef>       
-#include <utility>       
-#include <iterator>  
+#include <cstddef>
+#include <utility>
+#include <iterator>
 #include "VectorBananov.h"
 #include "VecIterator.h"
+#include "Table.hpp"
 
 using std::pair;
 
 template <class TKey, class TVal>
-class OpenAddressingHashTableMap {
+class OpenAddressingHashTableMap : public Table<TKey, TVal> {
     using Pair = pair<TKey, TVal>;
 
     enum CellState { FREE, IN_USE, ERASED };
@@ -51,7 +52,6 @@ class OpenAddressingHashTableMap {
 
         table = std::move(new_table);
         table_mask = new_mask;
-        num_elements = 0; 
         num_elements = 0;
         for (size_t i = 0; i < table.size(); ++i)
             if (table[i].state == IN_USE) ++num_elements;
@@ -126,9 +126,6 @@ public:
         return end();
     }
 
-    bool empty() const { return num_elements == 0; }
-    size_t size() const { return num_elements; }
-
     TVal& operator[](const TKey& k) {
         Iterator it = find(k);
         if (it != end()) return it->second;
@@ -145,13 +142,13 @@ public:
                 if (first_free > table_mask) first_free = idx;
             }
             if (cell.state == IN_USE && cell.data.first == k) {
-                                 return cell.data.second;
+                return cell.data.second;
             }
             ++idx;
             if (idx > table_mask) idx = 0;
         }
 
-                 HashCell& cell = table[first_free];
+        HashCell& cell = table[first_free];
         cell.data = Pair(k, TVal());
         cell.state = IN_USE;
         ++num_elements;
@@ -193,7 +190,7 @@ public:
                 if (first_free > table_mask) first_free = idx;
             }
             if (cell.state == IN_USE && cell.data.first == p.first) {
-                                 return {Iterator(table.begin() + idx, table.end()), false};
+                return {Iterator(table.begin() + idx, table.end()), false};
             }
             ++idx;
             if (idx > table_mask) idx = 0;
@@ -242,6 +239,50 @@ public:
     Iterator end() {
         return Iterator(table.end(), table.end());
     }
+
+    void add(const TKey& key, const TVal& value) override {
+        this->insert({key, value});
+    }
+
+    bool remove(const TKey& key) override {
+        return this->erase(key) > 0;
+    }
+
+    TVal* get(const TKey& key) override {
+        Iterator it = this->find(key);
+        return (it != end()) ? &(it->second) : nullptr;
+    }
+
+    size_t size() override {
+        return num_elements;
+    }
+
+    bool empty() override {
+        return num_elements == 0;
+    }
+
+    void clear() override {
+        table = VectorBananov<HashCell>(table_mask + 1, HashCell());
+        num_elements = 0;
+    }
+
+    std::vector<TKey> keys() override {
+        std::vector<TKey> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.push_back(it->first);
+        return res;
+    }
+
+    std::vector<std::pair<TKey, TVal>> items() override {
+        std::vector<std::pair<TKey, TVal>> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.emplace_back(it->first, it->second);
+        return res;
+    }
+
+    bool contains(const TKey& key) override {
+        return find(key) != end();
+    }
 };
 
-#endif  
+#endif

@@ -1,32 +1,34 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.16)
 project(PolinomiMapi)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(src)
+# ----- Р‘РёР±Р»РёРѕС‚РµРєР° РїРѕР»РёРЅРѕРјРѕРІ -----
+add_library(polinoms_lib INTERFACE)
+target_include_directories(polinoms_lib INTERFACE src)
 
 # ----- Google Test -----
 include(FetchContent)
 FetchContent_Declare(
-    googletest
-    URL "https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip"
+        googletest
+        URL "https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip"
 )
-
-# Для Windows: отключаем параллельную сборку googletest (иногда помогает)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
 FetchContent_MakeAvailable(googletest)
 
-#enable_testing()
+# ----- РўРµСЃС‚С‹ -----
+option(BUILD_TESTS "Build tests" ON)
+if(BUILD_TESTS)
+    file(GLOB TEST_SOURCES "tests/*.cpp")
+    add_executable(run_tests ${TEST_SOURCES})
+    target_link_libraries(run_tests gtest_main gtest polinoms_lib)
+endif()
 
-# Find all test files in the 'tests' directory
-file(GLOB TEST_SOURCES "tests/*.cpp")
-
-# Create a separate test executable
-add_executable(run_tests ${TEST_SOURCES})
-target_link_libraries(run_tests gtest_main gtest)
-
-# Register tests with CTest
-#include(GoogleTest)
-#gtest_discover_tests(run_tests)
+# ----- Qt GUI -----
+option(BUILD_QT_GUI "Build Qt GUI" ON)
+if(BUILD_QT_GUI)
+    # РќР°С…РѕРґРёРј Qt6 РґРѕ РѕР±СЂР°Р±РѕС‚РєРё РїРѕРґРґРёСЂРµРєС‚РѕСЂРёРё
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+    add_subdirectory(qt_gui)
+endif()

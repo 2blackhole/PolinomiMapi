@@ -4,14 +4,16 @@
 
 #ifndef AVLTREEMAP_H
 #define AVLTREEMAP_H
-//#include <bits/stdc++.h>
-#include <cstddef>      
-#include <utility>     
-#include <iterator>  
+#include <cstddef>
+#include <utility>
+#include <iterator>
+#include <functional>
+#include "Table.hpp"
+
 using std::pair;
 
 template<class TKey, class TVal>
-class AVLTreeMap {
+class AVLTreeMap : public Table<TKey, TVal> {
     using Pair = pair<TKey, TVal>;
 
     struct Node {
@@ -47,7 +49,7 @@ class AVLTreeMap {
 
         reference operator*() const { return node->data; }
         pointer operator->() const { return &(operator*()); }
-        
+
         Iterator& operator++() {
             node = increment(node);
             return *this;
@@ -106,7 +108,6 @@ class AVLTreeMap {
     Node* root = nullptr;
     int sz = 0;
 
-    //L-R
     static int diff(const Node& x) {
         if (x.left == nullptr && x.right == nullptr) {
             return 0;
@@ -136,10 +137,10 @@ class AVLTreeMap {
     void rotate_left(Node* v) {
         Node* b = v->right;
         if (!b) return;
-        
+
         v->right = b->left;
         if (b->left) b->left->parent = v;
-        
+
         b->left = v;
         Node* ded = v->parent;
         b->parent = ded;
@@ -365,10 +366,6 @@ public:
         return {find(p.first), false};
     }
 
-    bool empty() {return sz == 0;}
-
-    size_t size() {return sz;}
-
     Node* findNextNode(TKey& key) {
         Node* cur = root;
         Node* succ = nullptr;
@@ -384,6 +381,7 @@ public:
         }
         return succ;
     }
+
     Iterator erase(Iterator pos) {
         if (pos == end()) return end();
 
@@ -392,7 +390,6 @@ public:
 
         return Iterator(findNextNode(key));
     }
-    
 
     size_t erase(const TKey& k) {
         Node* node = find(root, k);
@@ -401,7 +398,50 @@ public:
         return 1;
     }
 
+    void add(const TKey& key, const TVal& value) override {
+        this->insert({key, value});
+    }
 
+    bool remove(const TKey& key) override {
+        return this->erase(key) > 0;
+    }
+
+    TVal* get(const TKey& key) override {
+        Iterator it = this->find(key);
+        return (it != end()) ? &(it->second) : nullptr;
+    }
+
+    size_t size() override {
+        return sz;
+    }
+
+    bool empty() override {
+        return sz == 0;
+    }
+
+    void clear() override {
+        clear(root);
+        root = nullptr;
+        sz = 0;
+    }
+
+    std::vector<TKey> keys() override {
+        std::vector<TKey> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.push_back(it->first);
+        return res;
+    }
+
+    std::vector<std::pair<TKey, TVal>> items() override {
+        std::vector<std::pair<TKey, TVal>> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.emplace_back(it->first, it->second);
+        return res;
+    }
+
+    bool contains(const TKey& key) override {
+        return find(key) != end();
+    }
 };
 
 #endif //AVLTREEMAP_H
