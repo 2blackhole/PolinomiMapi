@@ -1,4 +1,3 @@
-// qt_gui/ExpressionWidget.hpp
 #ifndef EXPRESSIONWIDGET_H
 #define EXPRESSIONWIDGET_H
 

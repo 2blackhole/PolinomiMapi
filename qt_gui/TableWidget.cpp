@@ -1,8 +1,8 @@
-// qt_gui/TableWidget.cpp
 #include "TableWidget.hpp"
 #include <QMessageBox>
 #include <QHeaderView>
 #include <sstream>
+#include <QFileDialog>
 
 TableWidget::TableWidget(PolinomManager* manager, QWidget *parent)
     : QWidget(parent)
@@ -20,6 +20,10 @@ void TableWidget::setupUI()
 
     QGroupBox *controlGroup = new QGroupBox("Table Control");
     QGridLayout *controlLayout = new QGridLayout(controlGroup);
+    m_saveButton = new QPushButton("Save to File");
+    m_loadButton = new QPushButton("Load from File");
+    controlLayout->addWidget(m_saveButton, 2, 0);
+    controlLayout->addWidget(m_loadButton, 2, 1);
 
     controlLayout->addWidget(new QLabel("Table Type:"), 0, 0);
     m_tableTypeCombo = new QComboBox();
@@ -68,6 +72,8 @@ void TableWidget::setupConnections()
     connect(m_refreshButton, &QPushButton::clicked, this, &TableWidget::refreshTableView);
     connect(m_clearButton, &QPushButton::clicked, this, &TableWidget::clearAllPolynomials);
     connect(m_removeButton, &QPushButton::clicked, this, &TableWidget::removeSelectedPolynomial);
+    connect(m_saveButton, &QPushButton::clicked, this, &TableWidget::saveToFile);
+    connect(m_loadButton, &QPushButton::clicked, this, &TableWidget::loadFromFile);
 }
 
 void TableWidget::onTableTypeChanged(int index)
@@ -182,5 +188,45 @@ void TableWidget::populateTableWidget()
     } catch (const std::exception& e) {
         m_tableWidget->setRowCount(0);
         QMessageBox::warning(this, "Error", QString("Error loading table: %1").arg(e.what()));
+    }
+}
+
+void TableWidget::saveToFile()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+        "Save Polynomials", "", "Text Files (*.txt);;All Files (*)");
+
+    if (filename.isEmpty()) return;
+
+    if (m_manager->SaveToFile(filename.toStdString())) {
+        QMessageBox::information(this, "Success",
+            QString("Polynomials saved to %1").arg(filename));
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to save polynomials");
+    }
+}
+
+void TableWidget::loadFromFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this,
+        "Load Polynomials", "", "Text Files (*.txt);;All Files (*)");
+
+    if (filename.isEmpty()) return;
+
+    int ret = QMessageBox::question(this, "Load Options",
+        "Clear existing polynomials before loading?",
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+    if (ret == QMessageBox::Cancel) return;
+
+    bool clearExisting = (ret == QMessageBox::Yes);
+
+    if (m_manager->LoadFromFile(filename.toStdString(), clearExisting)) {
+        refreshTableView();
+        emit tableChanged();
+        QMessageBox::information(this, "Success",
+            QString("Polynomials loaded from %1").arg(filename));
+    } else {
+        QMessageBox::warning(this, "Error", "Failed to load polynomials");
     }
 }

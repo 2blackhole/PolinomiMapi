@@ -1,4 +1,3 @@
-// qt_gui/TableWidget.hpp
 #ifndef TABLEWIDGET_H
 #define TABLEWIDGET_H
 
@@ -26,6 +25,8 @@ public slots:
     void refreshTableView();
     void removeSelectedPolynomial();
     void clearAllPolynomials();
+    void saveToFile();
+    void loadFromFile();
 
     signals:
         void tableChanged();
@@ -39,6 +40,8 @@ private:
     QLineEdit *m_searchEdit;
     QPushButton *m_refreshButton;
     QPushButton *m_clearButton;
+    QPushButton *m_saveButton;
+    QPushButton *m_loadButton;
     QTableWidget *m_tableWidget;
     QPushButton *m_removeButton;
     PolinomManager* m_manager;

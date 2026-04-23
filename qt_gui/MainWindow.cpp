@@ -1,4 +1,3 @@
-// qt_gui/MainWindow.cpp
 #include "MainWindow.hpp"
 #include "PolynomialWidget.hpp"
 #include "TableWidget.hpp"
@@ -84,6 +83,24 @@ void MainWindow::setupMenuBar()
     m_aboutAction = new QAction("&About", this);
     m_aboutAction->setStatusTip("About application");
     helpMenu->addAction(m_aboutAction);
+
+    QAction *saveAction = new QAction("&Save Table to File...", this);
+    saveAction->setShortcut(QKeySequence::Save);
+    saveAction->setStatusTip("Save all polynomials to file");
+    fileMenu->addAction(saveAction);
+
+    QAction *loadAction = new QAction("&Load Table from File...", this);
+    loadAction->setShortcut(QKeySequence::Open);
+    loadAction->setStatusTip("Load polynomials from file");
+    fileMenu->addAction(loadAction);
+
+    connect(saveAction, &QAction::triggered, [this]() {
+        m_tableWidget->saveToFile();
+    });
+
+    connect(loadAction, &QAction::triggered, [this]() {
+        m_tableWidget->loadFromFile();
+    });
 }
 
 void MainWindow::setupStatusBar()

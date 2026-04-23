@@ -1,4 +1,3 @@
-// qt_gui/main.cpp
 #include <QApplication>
 #include <QStyleFactory>
 #include "MainWindow.hpp"

@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include "polijop.hpp"
+#include <fstream>
 #include <stdexcept>
 
 class PolinomManager {
@@ -118,6 +119,59 @@ public:
 
     void ClearAll() {
         table_->clear();
+    }
+
+    bool SaveToFile(const std::string& filename) {
+        try {
+            std::ofstream file(filename);
+            if (!file.is_open()) return false;
+
+            auto items = table_->items();
+            file << items.size() << '\n';
+            for (const auto& item : items) {
+                file << item.first << '\n';
+                item.second.SaveToFile(file);
+            }
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    bool LoadFromFile(const std::string& filename, bool clearExisting = true) {
+        try {
+            std::ifstream file(filename);
+            if (!file.is_open()) return false;
+
+            if (clearExisting) {
+                table_->clear();
+            }
+
+            size_t count;
+            file >> count;
+            file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            for (size_t i = 0; i < count; ++i) {
+                std::string name;
+                std::getline(file, name);
+
+                polijop p;
+                p.LoadFromFile(file);
+
+                table_->add(name, p);
+            }
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    bool SaveToFile() {
+        return SaveToFile("polynomials.txt");
+    }
+
+    bool LoadFromFile(bool clearExisting = true) {
+        return LoadFromFile("polynomials.txt", clearExisting);
     }
 
     void CreateSamplePolinoms() {

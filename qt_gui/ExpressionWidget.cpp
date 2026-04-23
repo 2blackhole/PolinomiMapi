@@ -1,4 +1,3 @@
-// qt_gui/ExpressionWidget.cpp
 #include "ExpressionWidget.hpp"
 #include <QMessageBox>
 #include <QInputDialog>

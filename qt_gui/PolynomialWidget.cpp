@@ -1,4 +1,3 @@
-// qt_gui/PolynomialWidget.cpp
 #include "PolynomialWidget.hpp"
 #include <QMessageBox>
 #include <sstream>

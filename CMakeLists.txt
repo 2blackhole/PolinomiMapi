@@ -4,11 +4,9 @@ project(PolinomiMapi)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ----- Библиотека полиномов -----
 add_library(polinoms_lib INTERFACE)
 target_include_directories(polinoms_lib INTERFACE src)
 
-# ----- Google Test -----
 include(FetchContent)
 FetchContent_Declare(
         googletest
@@ -17,7 +15,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# ----- Тесты -----
 option(BUILD_TESTS "Build tests" ON)
 if(BUILD_TESTS)
     file(GLOB TEST_SOURCES "tests/*.cpp")
@@ -25,10 +22,8 @@ if(BUILD_TESTS)
     target_link_libraries(run_tests gtest_main gtest polinoms_lib)
 endif()
 
-# ----- Qt GUI -----
 option(BUILD_QT_GUI "Build Qt GUI" ON)
 if(BUILD_QT_GUI)
-    # Находим Qt6 до обработки поддиректории
     find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
     add_subdirectory(qt_gui)
 endif()

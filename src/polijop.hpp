@@ -218,6 +218,37 @@ public:
         }
     }
 
+    void SaveToFile(std::ostream& os) const {
+        os << monomesi.size() << '\n';
+        for (const auto& m : monomesi) {
+            os << m.ijk << ' ' << m.a << '\n';
+        }
+    }
+
+    void LoadFromFile(std::istream& is) {
+        monomesi.clear();
+
+        size_t count;
+        is >> count;
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        std::vector<pint> temp;
+        for (size_t i = 0; i < count; ++i) {
+            int32_t ijk;
+            double a;
+            is >> ijk >> a;
+            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            temp.emplace_back(ijk, a);
+        }
+        build_from_vec(temp);
+    }
+
+    static polijop FromFile(std::istream& is) {
+        polijop p;
+        p.LoadFromFile(is);
+        return p;
+    }
+
     bool isZero() const { return monomesi.empty(); }
     size_t getMonomCount() const { return monomesi.size(); }
     const ForwardList<monon>& getMonoms() const { return monomesi; }

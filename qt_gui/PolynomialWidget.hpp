@@ -1,4 +1,3 @@
-// qt_gui/PolynomialWidget.hpp
 #ifndef POLYNOMIALWIDGET_H
 #define POLYNOMIALWIDGET_H
 

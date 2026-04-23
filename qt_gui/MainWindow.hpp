@@ -1,4 +1,3 @@
-// qt_gui/MainWindow.hpp
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
