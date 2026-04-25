@@ -4,15 +4,17 @@
 #ifndef UNORDERED_MAP_VEC_H
 #define UNORDERED_MAP_VEC_H
 
-#include <cstddef>       
-#include <utility>     
+#include <cstddef>
+#include <utility>
 #include <iterator>
 #include "VectorBananov.h"
 #include "VecIterator.h"
+#include "Table.hpp"
+
 using std::pair;
 
 template <class TKey, class TVal>
-class UnorderedMapVec {
+class UnorderedMapVec : public Table<TKey, TVal> {
     using Pair = pair<TKey, TVal>;
     VectorBananov<Pair> data;
 
@@ -40,7 +42,6 @@ public:
     UnorderedMapVec(const VectorBananov<pair<TKey, TVal>>& v) : data(v) {}
     UnorderedMapVec(VectorBananov<pair<TKey, TVal>> v) : data(v) {}
 
-
     Iterator find(const TKey& k) {
         for (Iterator it = this->begin(); it != this->end(); ++it) {
             if (it->first == k) {
@@ -48,14 +49,6 @@ public:
             }
         }
         return this->end();
-    }
-
-    bool empty() {
-        return data.empty();
-    }
-
-    size_t size() {
-        return data.size();
     }
 
     TVal& operator[](const TKey& k) {
@@ -92,10 +85,52 @@ public:
     Iterator begin() {
         return Iterator{data.begin()};
     }
+
     Iterator end() {
         return Iterator{data.end()};
     }
 
-};
+    void add(const TKey& key, const TVal& value) override {
+        this->insert({key, value});
+    }
 
-#endif //UNORDERED_MAP_VEC_H
+    bool remove(const TKey& key) override {
+        return this->erase(key) > 0;
+    }
+
+    TVal* get(const TKey& key) override {
+        Iterator it = this->find(key);
+        return (it != end()) ? &(it->second) : nullptr;
+    }
+
+    size_t size() override {
+        return data.size();
+    }
+
+    bool empty() override {
+        return data.empty();
+    }
+
+    void clear() override {
+        data.clear();
+    }
+
+    std::vector<TKey> keys() override {
+        std::vector<TKey> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.push_back(it->first);
+        return res;
+    }
+
+    std::vector<std::pair<TKey, TVal>> items() override {
+        std::vector<std::pair<TKey, TVal>> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.emplace_back(it->first, it->second);
+        return res;
+    }
+
+    bool contains(const TKey& key) override {
+        return find(key) != end();
+    }
+};
+#endif

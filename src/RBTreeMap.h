@@ -1,11 +1,12 @@
 #pragma once
 #include <utility>
 #include <cstddef>
+#include "Table.hpp"
 
 enum Color { RED, BLACK };
 
 template <typename TKey, typename TVal>
-class RBTreeMap {
+class RBTreeMap : public Table<TKey, TVal> {
 public:
     using Pair = std::pair<const TKey, TVal>;
 
@@ -334,9 +335,6 @@ public:
         return *this;
     }
 
-    bool empty() const { return sz == 0; }
-    size_t size() const { return sz; }
-
     TVal& operator[](const TKey& key) {
         Iterator it = find(key);
         if (it == end()) {
@@ -444,6 +442,51 @@ public:
 
     Iterator end() {
         return Iterator(NIL, this);
+    }
+
+    void add(const TKey& key, const TVal& value) override {
+        this->insert({key, value});
+    }
+
+    bool remove(const TKey& key) override {
+        return this->erase(key) > 0;
+    }
+
+    TVal* get(const TKey& key) override {
+        Iterator it = this->find(key);
+        return (it != end()) ? &(it->second) : nullptr;
+    }
+
+    size_t size() override {
+        return sz;
+    }
+
+    bool empty() override {
+        return sz == 0;
+    }
+
+    void clear() override {
+        clear(root);
+        root = NIL;
+        sz = 0;
+    }
+
+    std::vector<TKey> keys() override {
+        std::vector<TKey> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.push_back(it->first);
+        return res;
+    }
+
+    std::vector<std::pair<TKey, TVal>> items() override {
+        std::vector<std::pair<TKey, TVal>> res;
+        for (auto it = begin(); it != end(); ++it)
+            res.emplace_back(it->first, it->second);
+        return res;
+    }
+
+    bool contains(const TKey& key) override {
+        return find(key) != end();
     }
 };
 
